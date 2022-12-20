@@ -965,6 +965,99 @@ function test_Parkinson_volume(data)
 end
 
 
+function test_Parkinson_volume_additional_Stoke_constraint(data)
+    df = CSV.read(data*"/ReplicatedAcousticFeatures-ParkinsonDatabase.csv", DataFrame)
+
+    nr=240
+    nc=46
+    D=Matrix{Float64}(undef,nr,nc)
+    for j=1:nr
+        for i=4:48
+            D[j,i-3]=df[j,i]
+        end
+
+        D[j,46]=df[j,3]
+
+    end
+
+    max_col=[maximum(D[:,j]) for j=1:45]
+
+    for j=1:45
+        D[:,j]/=max_col[j]
+    end
+
+    D[:,1:45].-=0.5
+    D[:,1:45]*=2
+
+    max_norm_col=maximum(norm(D[j,1:45]) for j=1:nr) 
+
+    r=1.7
+    D[:,1:45]/=max_norm_col/r
+
+    Y1=D[findall(u -> u == 0, D[:,end]),1:45]
+    N=45
+
+    Y2=D[findall(u -> u == 1, D[:,end]),1:45]
+
+    t1=ceil(Int64,0.9*size(Y1,1))
+    Y_train1=Y1[1:t1,:]
+
+    t2=ceil(Int64,0.9*size(Y2,1))
+    Y_train2=Y2[1:t2,:]
+
+    Y_test1=Y1[(t1+1):end,:]
+
+    Y_test2=Y2[(t2+1):end,:]
+
+
+    println("Class 1")
+    println()
+
+    c=Inf
+    delt=1+1/c
+
+    Stokes_constraint=true
+
+    d1=1
+
+    eval_PDF1=model_volume(N,Y_train1,t1,r,d1,ball_cons=true,bound=Inf,
+        delt=delt,bound_coeff=c,Stokes_constraint=Stokes_constraint);
+    println()
+    println("Class 2")
+    println()
+    d2=1
+
+    eval_PDF2=model_volume(N,Y_train2,t2,r,d2,ball_cons=true,bound=Inf,
+        delt=delt,bound_coeff=c,Stokes_constraint=Stokes_constraint);
+
+    function classifier(y)
+        if eval_PDF1(y)>eval_PDF2(y)
+            return 1
+        else
+            return 2
+        end
+    end
+
+    predict1=[classifier(Y_test1[j,:]) for j in 1:size(Y_test1,1)]
+
+    numcor1=length(findall(u -> u == 1, predict1))
+
+    predict2=[classifier(Y_test2[j,:]) for j in 1:size(Y_test2,1)]
+
+    numcor2=length(findall(u -> u == 2, predict2))
+    
+    accuracy=(numcor1+numcor2)/(size(Y_test1,1)+size(Y_test2,1))
+    
+    println("Number of attributes: ",N)
+    println("Sample size: ",nr)
+    println("Cardinality of train set: ",t1+t2)
+    println("Cardinality of test set: ",nr-t1-t2)
+    println("Number of correct predictions: ",numcor1+numcor2)
+    println("Accuracy: ",accuracy)
+
+end
+
+
 function test_Breast_cancer_wisconsin_volume(data)
     
     df = CSV.read(data*"/data.csv",DataFrame)

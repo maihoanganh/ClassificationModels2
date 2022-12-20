@@ -159,6 +159,7 @@ ClassificationModels2.test_colon_cancer_SVM(data) # Section 5.2
 ClassificationModels2.test_colon_cancer_SVM_additional_monomials(data) # Section 5.2
 
 ClassificationModels2.test_Parkinson_volume(data) # Section 5.3
+ClassificationModels2.test_Parkinson_volume_additional_Stoke_constraint(data) # Section 5.3
 ClassificationModels2.test_Parkinson_SVM_first_order(data) # Section 5.3, k=1
 ClassificationModels2.test_Parkinson_SVM(data) # Section 5.3, k=2
 
